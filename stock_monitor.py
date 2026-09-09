@@ -174,9 +174,24 @@ def send_alert_to_notion(
 # LOAD PREVIOUS PRICE
 # ==========================================
 
-previous_prices = load_previous_prices()
+previous_prices_json = load_previous_prices()
 
-previous_price = previous_prices.get(symbol)
+previous_price = previous_prices_json.get(symbol)
+
+
+'''
+if previous_price is None:
+
+    previous_price = None
+    previous_timestamp = None
+
+else:
+
+    previous_price = previous_price["price"]
+    previous_timestamp = previous_price["timestamp"]
+
+'''
+
 
 
 # ==========================================
@@ -184,7 +199,7 @@ previous_price = previous_prices.get(symbol)
 # ==========================================
 
 current_price = get_current_price(symbol)
-
+current_timestamp = datetime.now(timezone.utc).isoformat()
 
 # ==========================================
 # CALCULATE CHANGE
@@ -267,9 +282,12 @@ print("------------------------------------")
 # SAVE CURRENT PRICE FOR NEXT RUN
 # ==========================================
 
-previous_prices[symbol] = current_price
+previous_prices_json[symbol] = {
+    "price": current_price,
+    "timestamp": current_timestamp
+}
 
-save_previous_prices(previous_prices)
+save_previous_prices(previous_prices_json)
 
 print("Current price saved for next run.")
 print("------------------------------------")
