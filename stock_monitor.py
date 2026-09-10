@@ -23,7 +23,7 @@ print("API key length:", len(API_KEY) if API_KEY else 0)
 
 THRESHOLD = 1.0
 
-symbol = "VFV"
+watchlist = ["VFV", "GOOGL", "AMZN", "DRAM"]
 
 PRICE_FILE = Path(r"C:\Users\hyeri\Desktop\stock-notion-monitor\stock-notion-monitor\previous_prices.json")
 
@@ -169,125 +169,118 @@ def send_alert_to_notion(
 
     return response.json()
 
-
-# ==========================================
-# LOAD PREVIOUS PRICE
-# ==========================================
+###################################################################
 
 previous_prices_json = load_previous_prices()
 
-previous_price = previous_prices_json.get(symbol)
+for symbol in watchlist:
 
+    print(f"Processiong {symbol}...")
 
-'''
-if previous_price is None:
+    previous_data = previous_prices_json.get(symbol)
 
-    previous_price = None
-    previous_timestamp = None
+    if previous_data is None:
 
-else:
+        previous_price = None
+        previous_timestamp = None
 
-    previous_price = previous_price["price"]
-    previous_timestamp = previous_price["timestamp"]
+    else:
 
-'''
-
-
-
-# ==========================================
-# GET CURRENT PRICE
-# ==========================================
-
-current_price = get_current_price(symbol)
-current_timestamp = datetime.now(timezone.utc).isoformat()
-
-# ==========================================
-# CALCULATE CHANGE
-# ==========================================
-
-change_pct = calculate_change(
-    current_price,
-    previous_price
-)
-
-
-# ==========================================
-# CHECK THRESHOLD
-# ==========================================
-
-if change_pct is None:
-
-    alert = False
-    direction = None
-
-elif change_pct >= THRESHOLD:
-
-    alert = True
-    direction = "Increase"
-
-elif change_pct <= -THRESHOLD:
-
-    alert = True
-    direction = "Decrease"
-
-else:
-
-    alert = False
-    direction = None
+        previous_price = previous_data["price"]
+        previous_timestamp = previous_data["timestamp"]
 
 
 
-# ==========================================
-# SEND ALERT TO NOTION
-# ==========================================
-
-if alert:
-
-    send_alert_to_notion(
-        symbol=symbol,
-        current_price=current_price,
-        previous_price=previous_price,
-        change_pct=change_pct,
-        direction=direction
-    )
+    current_price = get_current_price(symbol)
+    current_timestamp = datetime.now(timezone.utc).isoformat()
 
 
-# ==========================================
-# PRINT RESULT
-# ==========================================
 
-print("------------------------------------")
+    change_pct = calculate_change(
+            current_price,
+            previous_price
+        )
+    
 
-print(f"Ticker: {symbol}")
-print(f"Current price: ${current_price:.2f}")
-print(f"Previous price: ${previous_price}")
+  
 
-if change_pct is None:
+    # ==========================================
+    # CHECK THRESHOLD
+    # ==========================================
 
-    print("Change: N/A")
+    if change_pct is None:
 
-else:
+        alert = False
+        direction = None
 
-    print(f"Change: {change_pct:+.2f}%")
-    print(f"Threshold: ±{THRESHOLD:.2f}%")
-    print(f"Alert: {'YES' if alert else 'NO'}")
+    elif change_pct >= THRESHOLD:
+
+        alert = True
+        direction = "Increase"
+
+    elif change_pct <= -THRESHOLD:
+
+        alert = True
+        direction = "Decrease"
+
+    else:
+
+        alert = False
+        direction = None
+
+
+
+    # ==========================================
+    # SEND ALERT TO NOTION
+    # ==========================================
 
     if alert:
-        print(f"Direction: {direction}")
 
-print("------------------------------------")
+        send_alert_to_notion(
+            symbol=symbol,
+            current_price=current_price,
+            previous_price=previous_price,
+            change_pct=change_pct,
+            direction=direction
+        )
 
 
-# ==========================================
-# SAVE CURRENT PRICE FOR NEXT RUN
-# ==========================================
+    # ==========================================
+    # PRINT RESULT
+    # ==========================================
 
-previous_prices_json[symbol] = {
-    "price": current_price,
-    "timestamp": current_timestamp
-}
+    print("------------------------------------")
 
-save_previous_prices(previous_prices_json)
+    print(f"Ticker: {symbol}")
+    print(f"Current price: ${current_price:.2f}")
+    print(f"Previous price: ${previous_price}")
 
-print("Current price saved for next run.")
-print("------------------------------------")
+    if change_pct is None:
+
+        print("Change: N/A")
+
+    else:
+
+        print(f"Change: {change_pct:+.2f}%")
+        print(f"Threshold: ±{THRESHOLD:.2f}%")
+        print(f"Alert: {'YES' if alert else 'NO'}")
+
+        if alert:
+            print(f"Direction: {direction}")
+
+    print("------------------------------------")
+
+
+    # ==========================================
+    # SAVE CURRENT PRICE FOR NEXT RUN
+    # ==========================================
+
+    previous_prices_json[symbol] = {
+        "price": current_price,
+        "timestamp": current_timestamp
+    }
+
+    save_previous_prices(previous_prices_json)
+
+    print("Current price saved for next run.")
+    print("------------------------------------")
