@@ -1,0 +1,76 @@
+name: Stock Price Monitor
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+
+  monitor-stocks:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+
+      # --------------------------------
+      # 1. Download repository
+      # --------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+
+      # --------------------------------
+      # 2. Install Python
+      # --------------------------------
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+
+      # --------------------------------
+      # 3. Install dependencies
+      # --------------------------------
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+
+      # --------------------------------
+      # 4. Run Python stock monitor
+      # --------------------------------
+
+      - name: Run stock monitor
+        env:
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATA_SOURCE_ID: ${{ secrets.NOTION_DATA_SOURCE_ID }}
+
+        run: |
+          python stock_monitor.py
+
+
+      # --------------------------------
+      # 5. Save updated previous prices
+      # --------------------------------
+
+      - name: Commit updated price data
+        run: |
+
+          git config user.name "github-actions[bot]"
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add previous_prices.json
+
+          git diff --cached --quiet || git commit -m "Update previous stock prices"
+
+          git push
